@@ -1,0 +1,16 @@
+enum class token_type {
+    illegal,
+    eof,
+    identifier,
+    integer,
+    assign,
+    plus,
+    comma,
+    semicolon,
+    lparen,
+    rparen,
+    lsquirly,
+    rsquirly,
+    function,
+    let,
+};
