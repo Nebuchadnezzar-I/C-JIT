@@ -1,0 +1,8 @@
+/home/admiralcapo/personal/C-JIT/build/CMakeFiles/compiler.dir
+/home/admiralcapo/personal/C-JIT/build/CMakeFiles/tests.dir
+/home/admiralcapo/personal/C-JIT/build/CMakeFiles/test.dir
+/home/admiralcapo/personal/C-JIT/build/CMakeFiles/edit_cache.dir
+/home/admiralcapo/personal/C-JIT/build/CMakeFiles/rebuild_cache.dir
+/home/admiralcapo/personal/C-JIT/build/_deps/magic_enum-build/CMakeFiles/test.dir
+/home/admiralcapo/personal/C-JIT/build/_deps/magic_enum-build/CMakeFiles/edit_cache.dir
+/home/admiralcapo/personal/C-JIT/build/_deps/magic_enum-build/CMakeFiles/rebuild_cache.dir
