@@ -1,11 +1,12 @@
 #include "lexer.h"
 #include "../token/token.h"
+#include "../filesystem/fs.h"
 #include <stdlib.h>
 #include <string.h>
 
 void lexer_read_char(Lexer* l);
 
-Lexer* new_lexer(const char* input) {
+Lexer* new_lexer(FileData fd) {
     Lexer* lex;
     lex = calloc(1, sizeof *lex);
 
@@ -13,8 +14,8 @@ Lexer* new_lexer(const char* input) {
         return NULL;
     }
 
-    lex->input = input;
-    lex->input_size = strlen(input);
+    lex->input = fd.file_content;
+    lex->input_size = fd.file_size;
 
     lexer_read_char(lex);
     return lex;
@@ -93,7 +94,6 @@ char* read_number(Lexer* l) {
     return ret;
 }
 
-/////// Next token
 Token* lexer_next_token(Lexer* lex) {
     Token* tok;
     tok = calloc(1, sizeof *tok);
@@ -119,14 +119,51 @@ Token* lexer_next_token(Lexer* lex) {
         return tok;
     }
 
+    // TODO: Move to separate function
+    if (peek_char(lex) == '(') {
+        tok->type = T_L_PAREN;
+        tok->literal = "(";
+        lexer_read_char(lex);
+        return tok;
+    }
+
+    if (peek_char(lex) == ')') {
+        tok->type = T_R_PAREN;
+        tok->literal = ")";
+        lexer_read_char(lex);
+        return tok;
+    }
+
+    if (peek_char(lex) == '{') {
+        tok->type = T_L_SQUIRLY;
+        tok->literal = "{";
+        lexer_read_char(lex);
+        return tok;
+    }
+
+    if (peek_char(lex) == '}') {
+        tok->type = T_R_SQUIRLY;
+        tok->literal = "}";
+        lexer_read_char(lex);
+        return tok;
+    }
+
     if (is_letter(lex->ch)) {
         tok->literal = read_identifier(lex);
         tok->type = lookup_keyword(tok->literal);
         lexer_read_char(lex);
         return tok;
     } else if (is_digit(lex->ch)) {
-        tok->type = T_INT;
         tok->literal = read_number(lex);
+        tok->type = T_INT;
+        lexer_read_char(lex);
+        return tok;
+    } else {
+        char str[2];
+        str[0] = lex->ch;
+        str[1] = '\0';
+        tok->literal = str;
+        tok->type = T_ILLEGAL;
         lexer_read_char(lex);
         return tok;
     }

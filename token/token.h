@@ -9,6 +9,10 @@ typedef enum {
     T_ASSIGN,
     T_EQUALS, // ==
     T_IDENT,
+    T_L_SQUIRLY,
+    T_R_SQUIRLY,
+    T_L_PAREN,
+    T_R_PAREN,
     //
     //      Keywords
     //

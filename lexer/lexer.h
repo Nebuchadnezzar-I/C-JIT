@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "../token/token.h"
+#include "../filesystem/fs.h"
 
 typedef struct {
     const char* input;
@@ -12,5 +13,5 @@ typedef struct {
     uint8_t ch;
 } Lexer;
 
-extern Lexer* new_lexer(const char* input);
+extern Lexer* new_lexer(FileData fd);
 extern Token* lexer_next_token(Lexer* l);
