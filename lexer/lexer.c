@@ -1,164 +1,137 @@
-#include <stddef.h>
-#include <stdio.h>
+#include "lexer.h"
+#include "../token/token.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "lexer.h"
 
-typedef struct Lexer {
-    const char *input;
-    size_t input_len;
-    size_t position;
-    size_t read_pos;
-    char ch;
-} Lexer;
+void lexer_read_char(Lexer* l);
 
-static void _lexer_read_char(Lexer *lexer);
-static void _lexer_skip_whitespace(Lexer *lexer);
+Lexer* new_lexer(const char* input) {
+    Lexer* lex;
+    lex = calloc(1, sizeof *lex);
 
-static const char *_lexer_read_ident(Lexer *lexer, size_t *len);
-static const char *_lexer_read_int(Lexer *lexer, size_t *len);
-static TokenType _get_keyword_from_literal(const char* literal, size_t len);
+    if (!lex) {
+        return NULL;
+    }
 
-static uint8_t _is_letter(char ch);
-static uint8_t _is_number(char ch);
+    lex->input = input;
+    lex->input_size = strlen(input);
 
-//
-//                          Public Functions
-//
-
-Token *token_create(TokenType type, char *literal) {
-    size_t len = sizeof(Token);
-    Token *token = malloc(len);
-
-    memset(token, 0, len);
-
-    token->literal = literal;
-    token->type = type;
-
-    return token;
+    lexer_read_char(lex);
+    return lex;
 }
 
-Lexer *create_lexer(const char* input) {
-    size_t len = sizeof(Lexer);
-    Lexer *lexer = malloc(len);
-    memset(lexer, 0, len);
+void lexer_read_char(Lexer* lex) {
+    if (lex->read_position >= lex->input_size) {
+        lex->ch = 0;
+    } else {
+        lex->ch = lex->input[lex->read_position];
+    }
 
-    lexer->input = input;
-    lexer->input_len = strlen(input);
-    lexer->position = 0;
-    lexer->read_pos = 0;
-
-    _lexer_read_char(lexer);
-
-    return lexer;
+    lex->position = lex->read_position;
+    lex->read_position += 1;
 }
 
-Token *lexer_next_token(Lexer *lexer) {
-    Token *tok = NULL;
-
-    _lexer_skip_whitespace(lexer);
-
-    switch (lexer->ch) {
-        case '\0':
-            tok = token_create(T_EOF, NULL);
-            break;
+char peek_char(Lexer* lex) {
+    if (lex->read_position >= lex->input_size) {
+        return 0;
     }
 
-    if (_is_letter(lexer->ch)) {
-        size_t len = 0;
-        const char *ident = _lexer_read_ident(lexer, &len);
+    return lex->input[lex->position];
+}
 
-        TokenType type = _get_keyword_from_literal(ident, len);
+void skip_white_space(Lexer* lex) {
+    while ((lex->ch == ' ') || (lex->ch == '\t') || (lex->ch == '\n') || (lex->ch == '\r')) {
+        lexer_read_char(lex);
+    }
+}
 
-        tok = token_create(type, strndup(ident, len));
-        return tok;
+uint8_t is_digit(char ch) {
+    return (('0' <= ch) && (ch <= '9')) ? 1 : 0;
+}
+
+uint8_t is_letter(char ch) {
+    return ((('a' <= ch) && (ch <= 'z')) || (('A' <= ch) && (ch <= 'Z')) || (ch == '_')) ? 1 : 0;
+}
+
+char* read_identifier(Lexer* l) {
+    size_t pos;
+    uint8_t is;
+    char* ret;
+    pos = l->position;
+    while ((is = is_letter(l->ch))) {
+        lexer_read_char(l);
+        is = is_letter(l->ch);
     }
 
-    if (_is_number(lexer->ch)) {
-        size_t len = 0;
-        char *literal = NULL;
-        const char *ident = _lexer_read_int(lexer, &len);
+    ret = calloc((l->position - pos) + 1, sizeof *ret);
+    if (!ret) { return NULL; }
 
-        literal = strndup(ident, len);
+    memcpy(ret, l->input + pos, l->position - pos);
 
-        tok = token_create(T_INT, literal);
-        return tok;
+    l->position--;
+    l->read_position--;
+    return ret;
+}
+
+char* read_number(Lexer* l) {
+    size_t pos;
+    uint8_t is;
+    char* ret;
+    pos = l->position;
+    while ((is = is_digit(l->ch))) {
+        lexer_read_char(l);
+        is = is_digit(l->ch);
     }
+
+    ret = calloc((l->position - pos) + 1, sizeof *ret);
+    if (!ret) { return NULL; }
+
+    memcpy(ret, l->input + pos, l->position - pos);
+
+    l->position--;
+    l->read_position--;
+    return ret;
+}
+
+/////// Next token
+Token* lexer_next_token(Lexer* lex) {
+    Token* tok;
+    tok = calloc(1, sizeof *tok);
+    skip_white_space(lex);
 
     if (!tok) {
-        tok = token_create(T_ILLEGAL, NULL);
+        return NULL;
     }
 
-    _lexer_read_char(lexer);
+    // = or ==
+    if (lex->ch == '=') {
+        lexer_read_char(lex);
 
+        if (peek_char(lex) == '=') {
+            tok->type = T_EQUALS;
+            tok->literal = "==";
+            lexer_read_char(lex);
+            return tok;
+        }
+
+        tok->type = T_ASSIGN;
+        tok->literal = "=";
+        return tok;
+    }
+
+    if (is_letter(lex->ch)) {
+        tok->literal = read_identifier(lex);
+        tok->type = lookup_keyword(tok->literal);
+        lexer_read_char(lex);
+        return tok;
+    } else if (is_digit(lex->ch)) {
+        tok->type = T_INT;
+        tok->literal = read_number(lex);
+        lexer_read_char(lex);
+        return tok;
+    }
+
+    tok->type = T_EOF;
+    tok->literal = "";
     return tok;
 }
-
-//
-//                          Private Functions
-//
-
-static void _lexer_read_char(Lexer *lexer) {
-    if (lexer->read_pos >= lexer->input_len) {
-        lexer->ch = '\0';
-    } else {
-        lexer->ch = lexer->input[lexer->read_pos];
-    }
-
-    lexer->position = lexer->read_pos;
-    lexer->read_pos++;
-}
-
-static void _lexer_skip_whitespace(Lexer *lexer) {
-    while (lexer->ch == ' ' || lexer->ch == '\t' || lexer->ch == '\n' ||
-        lexer->ch == '\r') {
-        _lexer_read_char(lexer);
-    }
-}
-
-static const char *_lexer_read_ident(Lexer *lexer, size_t *len) {
-    size_t position = lexer->position;
-
-    while (_is_letter(lexer->ch)) {
-        _lexer_read_char(lexer);
-    }
-
-    if (len) {
-        *len = lexer->position - position;
-    }
-
-    return lexer->input + position;
-}
-
-static const char *_lexer_read_int(Lexer *lexer, size_t *len) {
-    size_t position = lexer->position;
-
-    while (_is_number(lexer->ch)) {
-        _lexer_read_char(lexer);
-    }
-
-    if (len) {
-        *len = lexer->position - position;
-    }
-
-    return lexer->input + position;
-}
-
-static TokenType _get_keyword_from_literal(const char* literal, size_t len) {
-    if (strncmp(literal, "true", len) == 0) {
-        return T_TRUE;
-    }
-
-    if (strncmp(literal, "false", len) == 0) {
-        return T_FALSE;
-    }
-
-    return T_IDENT;
-}
-
-static uint8_t _is_letter(char ch) {
-    return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_';
-}
-
-static uint8_t _is_number(char ch) { return '0' <= ch && '9' >= ch; }

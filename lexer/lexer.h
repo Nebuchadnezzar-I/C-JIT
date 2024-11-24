@@ -1,21 +1,16 @@
 #pragma once
 
-typedef enum TokenType {
-    T_IDENT,
-    T_STRING,
-    T_ILLEGAL,
-    T_INT,
-    T_EOF,
-    T_TRUE,
-    T_FALSE,
-} TokenType;
+#include <stddef.h>
+#include <stdint.h>
+#include "../token/token.h"
 
-typedef struct VWToken {
-    TokenType type;
-    char *literal;
-} Token;
+typedef struct {
+    const char* input;
+    size_t input_size;
+    size_t position;
+    size_t read_position;
+    uint8_t ch;
+} Lexer;
 
-typedef struct Lexer Lexer;
-Lexer *create_lexer(const char *input);
-Token *lexer_next_token(Lexer *lexer);
-Token *token_create(TokenType type, char *literal);
+extern Lexer* new_lexer(const char* input);
+extern Token* lexer_next_token(Lexer* l);
