@@ -1,34 +1,31 @@
 #include "token.h"
 #include <string.h>
 
-Token keywords[] = {
-    { T_IF,       "if"        },
-    { T_INT,      "int"       },
-    { T_ASSIGN,   "="         },
+
+// String map
+const char* token_kind_arr[] = {
+    #define STRING_DEFINE(name, str) str,
+    TOKEN_KIND_LIST(STRING_DEFINE)
 };
 
-#define NUM_KEYWORDS (sizeof(keywords) / sizeof(Token))
 
-TokenKind lookup_keyword(const char* search_keyword) {
-    for (int i = 0; i < NUM_KEYWORDS; i++) {
-        if (strcmp(keywords[i].literal, search_keyword) == 0) {
-            return keywords[i].type;
+// Check if token is keyword
+TokenKind find_keyword(const char* t) {
+    for (int i = 0; i < TOKEN_KIND_COUNT; i++) {
+        if (strcmp(t, token_kind_arr[i]) == 0) {
+            return (TokenKind)i;
         }
     }
 
     return T_IDENT;
 }
 
-extern char* token_to_str(TokenKind type) {
-    switch (type) {
-        case T_ILLEGAL: return "illegal";
-        case T_EQUALS: return "equals";
-        case T_INT: return "int";
-        case T_IDENT: return "ident";
-        case T_L_PAREN: return "l_paren";
-        case T_R_PAREN: return "r_paren";
-        case T_L_SQUIRLY: return "l_squirly";
-        case T_R_SQUIRLY: return "r_squirly";
-        default: return "UNKNOWN_TOKEN_KIND";
-    };
+
+// Token to str
+const char* token_to_str(TokenKind t) {
+    if (t >= 0 && t < TOKEN_KIND_COUNT) {
+        return token_kind_arr[t];
+    }
+
+    return "unknown";
 }

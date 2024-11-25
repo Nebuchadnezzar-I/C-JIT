@@ -1,50 +1,43 @@
-#include "./filesystem/fs.h"
-#include "./token/token.h"
-#include "./lexer/lexer.h"
 #include <stdio.h>
+#include "lexer/lexer.h"
+#include "./filesystem/fs.h"
 
-FileData init_file(const char *root_path) {
-    FileData fd = {
-        .file_path = root_path,
-        .file_content = NULL,
-        .file_depth = 0
-    };
 
-    load_to_memory(&fd);
+// test_token();
+// test_lexer();
 
-    return fd;
-}
 
-int main(int argc, char **argv) {
-    if (!argv[1]) { return 1; } // File path
-
-    FileData fd = init_file(argv[1]);
-    Lexer* lexer = new_lexer(fd);
-
-    if (!lexer) {
-        fprintf(stderr, "Failed to create lexer.\n");
+int main(int argc, char* argv[]) {
+    if (1 == argc) {
+        printf("No file! \n");
         return 1;
     }
 
-    while(1) {
-        Token* token = lexer_next_token(lexer);
+    // Load file
+    const char *file_loc = argv[1];
+    const char *file_contents = load_main_file(file_loc);
 
-        if (!token) {
-            fprintf(stderr, "Error allocating token.\n");
-            return 1;
-        }
+    if (!file_contents) {
+        printf("File not found\n");
+        return 1;
+    }
 
-        if (token->type == T_EOF || token->type == T_ILLEGAL) {
+    // Lex
+    Lexer *lexer = create_init(file_contents);
+
+    if (!lexer) {
+        fprintf(stderr, "Failed to initialize lexer.\n");
+    }
+
+    while (1) {
+        Token *token = lexer_next_token(lexer);
+
+        if (token->type == T_EOF) {
             break;
         }
 
-        printf(
-            "Token: Type = %s, Literal = '%s'\n",
-            token_to_str(token->type),
-            token->literal
-        );
+        printf("Type: %s, Lit: %s \n", token_to_str(token->type), token->literal);
     }
 
-    free_file(&fd);
     return 0;
 }
